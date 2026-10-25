@@ -1,0 +1,38 @@
+export interface Release {
+  version: string
+  /** yyyy-mm-dd */
+  date: string
+  items: string[]
+}
+
+/**
+ * Content of the green "Update vX" badge popup, newest release first.
+ * The badge and the top of the popup show the first entry; the rest are listed as earlier versions.
+ * To publish a release: add an entry at the top and bump "version" in backend/package.json and frontend/package.json.
+ */
+export const CHANGELOG: Release[] = [
+  {
+    version: 'v1.2',
+    date: '2026-10-26',
+    items: [
+      'เพิ่มเมนู "แก้ไข DF": ค้นบิลด้วย HN + Invoice แล้วกรอกจำนวน DF กด "บันทึก" ระบบจะตั้ง cost_df และ price_total เป็นจำนวนที่กรอก และล้าง payment_id',
+      'แก้ DF: บิลที่มีหลายรายการให้เลือกแก้ทีละรายการ ส่วนรายการที่ยกเลิกแล้วและบิลที่ถูกลบจะแก้ไม่ได้',
+      'เมนูและปุ่มทุกจุดมีไอคอน หน้าตาทันสมัยขึ้น',
+      'กด Check แล้วขึ้น "ไม่พร้อม" จะบอกสาเหตุ เช่น หมดเวลา, ถูกปฏิเสธ, ล็อกอิน MongoDB ไม่ผ่าน, ไม่พบฐานข้อมูล',
+      'อัปเดตรายการ IP สาขาเป็น 309 สาขา (จาก AtizDevTool)',
+      'ล็อกอินปลอดภัยขึ้น: ตรวจรหัสผ่านที่เซิร์ฟเวอร์ ทุกคำสั่งต้องล็อกอินก่อน และ session หมดอายุใน 8 ชั่วโมง',
+      'บันทึกประวัติการแก้ไขทุกครั้ง (ใคร แก้อะไร เมื่อไหร่ ค่าก่อน/หลัง) ทั้งมัดจำและ DF',
+      'ป้องกันความผิดพลาด: มีกล่องยืนยันก่อนลบมัดจำและก่อนบันทึก DF, แก้มูลค่ามัดจำได้ตั้งแต่ 0 ถึงมูลค่าที่ซื้อ, สร้างรายการมัดจำซ้ำไม่ได้ (ใช้ชื่อและราคาจากบิลจริง)',
+      'ใช้งานหลายคนคนละสาขาพร้อมกันได้โดยข้อมูลไม่ปนกัน และแสดงเลข Invoice 7 หลักได้ถูกต้อง',
+    ],
+  },
+  {
+    version: 'v1.1',
+    date: '2026-06-21',
+    items: [
+      'แก้บั๊คที่ระบบไปดึง invoice รหัส "C"',
+      'เพิ่มปุ่ม "เลือกจากรายการ" ข้างช่อง IP เปิด modal เลือก IP ได้ (ดึงจาก Google Sheet)',
+      'เลือก IP แล้ว auto-fill ลงช่อง พร้อมโชว์ชื่อสาขาที่เลือกอยู่',
+    ],
+  },
+]

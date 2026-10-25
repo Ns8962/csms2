@@ -1,0 +1,23 @@
+# compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS / IDE
+.DS_Store
+/.idea
+.vscode/*
+!.vscode/extensions.json
+
+# environment (secrets)
+.env
+.env.*
+!.env.example
+
+# tsc incremental info
+*.tsbuildinfo

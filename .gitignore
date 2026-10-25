@@ -1,0 +1,23 @@
+# ---- secrets and local configuration (never commit) ----
+.env
+.env.*
+!.env.example
+
+# Kiro/agent configuration: the steering file holds credentials in plain text
+.kiro/
+
+# ---- internal infrastructure data ----
+# Server name/IP lists exported from the admin tool and the fleet survey results.
+# Regenerate locally with export/export-servers.mjs.
+export/*.csv
+
+# ---- dependencies and build output ----
+node_modules/
+dist/
+*.tsbuildinfo
+
+# ---- logs and OS files ----
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
