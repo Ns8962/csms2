@@ -176,6 +176,6 @@ node dist/main.js                   # เสิร์ฟทั้งหน้า
 
 ## ยังต้องยืนยัน
 
-- ชื่อ DB / user / password ของ MongoDB สาขา: ใช้ DB `mris` (user ระดับ root) สำรวจแล้ว 129 สาขาที่ต่อได้ ทุกตัวใช้ DB `mris` และรหัสเดียวกัน (ยกเว้น `libertywellness` 1 ตัว) · ควรสร้าง user เฉพาะ CSMS แทน root
+- ชื่อ DB / user / password ของ MongoDB สาขา: ใช้ DB `mris` (user ระดับ root) สำรวจแล้ว 129 สาขาที่ต่อได้ ทุกตัวใช้ DB `mris` และรหัสเดียวกัน (ยกเว้น 1 สาขาที่รหัสไม่ผ่าน) · ควรสร้าง user เฉพาะ CSMS แทน root
 - ปุ่ม ↻ ในหน้าเว็บยังเขียนว่า "โหลดรายการใหม่จาก Google Sheet" และใช้ได้เมื่อตั้ง `IP_LIST_SOURCE_URL` เท่านั้น (ตอนนี้โหลดรายการด้วย `npm run import:branches` แทน)
 - ของเดิมลบมัดจำแบบลบจริงหรือ soft delete และ `/search` กรอง HN กับ Invoice แบบ AND หรือ OR (clone ใช้ soft delete และ AND)
