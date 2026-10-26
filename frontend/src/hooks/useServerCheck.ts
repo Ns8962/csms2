@@ -14,11 +14,12 @@ export function useServerCheck(ip: string) {
   const [checking, setChecking] = useState(false)
   const [message, setMessage] = useState('')
 
-  const check = async () => {
-    if (checking) return
+  /** Resolves to true when the branch server answered "ready" (callers that need to act on it can await this). */
+  const check = async (): Promise<boolean> => {
+    if (checking) return false
     if (!ip.trim() || !isIPv4(ip)) {
       setState(0)
-      return
+      return false
     }
     setChecking(true)
     setMessage('')
@@ -31,8 +32,10 @@ export function useServerCheck(ip: string) {
       })
       setState(res.status === 'ready' ? 1 : 2)
       setMessage(res.status === 'ready' ? '' : (res.message ?? ''))
+      return res.status === 'ready'
     } catch {
       setState(2)
+      return false
     } finally {
       setChecking(false)
       clearTimeout(timer)

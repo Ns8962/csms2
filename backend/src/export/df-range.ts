@@ -29,6 +29,43 @@ function dayNumber(value: string): number | null {
   return back.getUTCFullYear() === y && back.getUTCMonth() === mo - 1 && back.getUTCDate() === d ? t : null;
 }
 
+/**
+ * Range of course expiry days. Unlike `created_at`, a course's `due_date` is a calendar day stored as midnight
+ * UTC (all 500 of 506 active ones on the checked clinic, and the other 6 show the same day in Thai time), so a day
+ * here is a UTC day, as in the CS team's script (`ISODate("2026-05-26")`, `$dateToString` without a time zone).
+ * Either end may be left out for no limit.
+ */
+export interface DueRange {
+  /** Inclusive: midnight UTC on the first day. */
+  from?: Date;
+  /** Exclusive: midnight UTC on the day after the last day. */
+  toExclusive?: Date;
+}
+
+/** Returns the range, or an error message in Thai for the UI. */
+export function parseDueRange(from: string | undefined, to: string | undefined): DueRange | string {
+  const out: DueRange = {};
+  if (from !== undefined) {
+    const a = dayNumber(from);
+    if (a === null) return 'วันหมดอายุเริ่มต้นไม่ถูกต้อง';
+    out.from = new Date(a);
+  }
+  if (to !== undefined) {
+    const b = dayNumber(to);
+    if (b === null) return 'วันหมดอายุสิ้นสุดไม่ถูกต้อง';
+    out.toExclusive = new Date(b + DAY_MS);
+  }
+  if (out.from && out.toExclusive && out.from >= out.toExclusive) return 'วันหมดอายุเริ่มต้นต้องไม่หลังวันที่สิ้นสุด';
+  return out;
+}
+
+/** dd-mm-yyyy of the UTC calendar day of an instant (the format of the original course script). */
+export function utcDayDashed(instant: Date): string {
+  const dd = String(instant.getUTCDate()).padStart(2, '0');
+  const mm = String(instant.getUTCMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${instant.getUTCFullYear()}`;
+}
+
 /** Returns the range, or an error message in Thai for the UI. */
 export function parseDfRange(from: string, to: string): DfRange | string {
   const a = dayNumber(from);

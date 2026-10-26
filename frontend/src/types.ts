@@ -23,6 +23,16 @@ export interface IpListResponse extends BasicResponse {
   updatedAt?: string | null
 }
 
+/** A branch seen on the bills of a clinic server. The pair (code, name) is the identity: codes are reused. */
+export interface ExportBranch {
+  code: string
+  name: string
+}
+
+export interface ExportBranchesResponse extends BasicResponse {
+  branches?: ExportBranch[]
+}
+
 export interface ConnectResponse extends BasicResponse {
   status?: 'ready' | 'not_ready'
 }

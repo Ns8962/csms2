@@ -18,10 +18,15 @@ export const BILL_STATUS_DELETED = 'delete';
 /** `doctorbills.status`: "active" rows count; "delete" rows are cancelled and must not be edited. */
 export const DOCTOR_BILL_ACTIVE = 'active';
 
+/** `course_bills.status`: only "active" course purchases are reported (live data also has "inactive", "expire" and the misspelt "exprie"). */
+export const COURSE_BILL_ACTIVE = 'active';
+
 export const COLLECTIONS = {
   bills: 'bills',
   depositBills: 'deposit_bills',
   doctorBills: 'doctorbills',
+  courseBills: 'course_bills',
+  listHeals: 'listheals',
 } as const;
 
 export interface BillListItem {
@@ -65,6 +70,35 @@ export interface DoctorBillDoc {
    * in the databases checked). CSMS clears it when the DF is edited, as requested.
    */
   payment_id?: ObjectId | null;
+}
+
+/** One treatment inside a purchased course. `number_of_time` is what is left of `number_of_time_default`. */
+export interface CourseListItem {
+  heal_id?: ObjectId | null;
+  number_of_time_default?: number;
+  number_of_time?: number;
+}
+
+/**
+ * A course a patient bought (`course_bills`). `due_date` is a calendar day stored as midnight UTC
+ * (checked on live data), unlike `created_at` fields which are real instants.
+ */
+export interface CourseBillDoc {
+  _id: ObjectId;
+  bill_id?: ObjectId | null;
+  status?: string;
+  name?: string;
+  price_of_course?: Decimal128 | number | null;
+  data_hn?: { hn?: string; name?: string } | null;
+  due_date?: Date | null;
+  course_list?: CourseListItem[];
+}
+
+/** A treatment in the clinic's catalogue. */
+export interface ListHealDoc {
+  _id: ObjectId;
+  code?: string;
+  name_th?: string;
 }
 
 export interface DepositBillDoc {

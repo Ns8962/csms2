@@ -6,7 +6,8 @@ export type AuditAction =
   | 'deposit.create'
   | 'deposit.delete'
   | 'df.update'
-  | 'export.df';
+  | 'export.df'
+  | 'export.courses';
 
 /**
  * One row per change the tool makes on a clinic database, plus one per data export (`export.*`, which

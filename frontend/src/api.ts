@@ -74,6 +74,8 @@ export type DownloadResult =
       rows: number
       total: number
       unreadable: number
+      /** Every `X-Export-*` header by name without the prefix, lower case (for example `courses`, `no-bill`). */
+      extra: Record<string, number>
     }
   | { ok: false; message: string; statusCode: number; code?: string }
 
@@ -106,6 +108,10 @@ export async function download(
   })
 
   if (res.ok) {
+    const extra: Record<string, number> = {}
+    res.headers.forEach((value, name) => {
+      if (name.startsWith('x-export-')) extra[name.slice('x-export-'.length)] = Number(value)
+    })
     return {
       ok: true,
       blob: await res.blob(),
@@ -113,6 +119,7 @@ export async function download(
       rows: Number(res.headers.get('x-export-rows') ?? 0),
       total: Number(res.headers.get('x-export-total') ?? 0),
       unreadable: Number(res.headers.get('x-export-unreadable') ?? 0),
+      extra,
     }
   }
 
