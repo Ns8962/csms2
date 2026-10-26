@@ -6,7 +6,7 @@
 
 - SPA React (Vite) ไฟล์เดียว เสิร์ฟจาก Express ตัวเดียวกับ API · login เช็กในเบราว์เซอร์ (username/password ฝังอยู่ใน JS) · API ไม่มีการยืนยันตัวตน
 - เป็นเครื่องมือ CS แก้ข้อมูล **มัดจำ** ของ DreaseV2 บน MongoDB ที่เครื่องสาขา (เลือกด้วย IP, รายชื่อ IP มาจาก Google Sheet ~670 สาขา)
-- มี 3 เมนู (clone เพิ่มเมนูที่ 4 "แก้ไข DF" ซึ่งเว็บเดิมไม่มี ดูตารางด้านล่าง):
+- มี 3 เมนู (clone เพิ่มเมนูที่ 4 "แก้ไข DF" และที่ 5 "Export data" ซึ่งเว็บเดิมไม่มี ดูตารางด้านล่าง):
 
 | เมนู | ทำอะไร | API |
 |---|---|---|
@@ -14,6 +14,7 @@
 | รายการมัดจำไม่แสดง | ค้นบิลด้วย Invoice เลือกรายการมัดจำในบิล แล้วสร้างแถวมัดจำที่ระบบไม่สร้างให้ | `POST /search-bills`, `POST /create-deposit` |
 | ลบรายการมัดจำ | ค้นมัดจำด้วย HN แล้วลบ | `POST /search-deposits`, `POST /delete-deposit` |
 | **แก้ไข DF** (เมนูใหม่) | ค้นบิลด้วย HN + Invoice (ต้องกรอกทั้งคู่) เลือกแถว DF ของบิล (บิลที่มีแถวเดียวเลือกให้เอง) กรอกจำนวน DF แล้วบันทึก | `POST /df/search`, `POST /df/update` |
+| **Export data** (เมนูใหม่) | รายการรายงานที่ดาวน์โหลดเป็น Excel ตอนนี้มี **Export DF**: เลือก IP สาขา กด Check เลือกช่วงวันที่ แล้วกด "ดาวน์โหลด Excel" ได้ไฟล์ `.xlsx` (วันที่, แพทย์/เจ้าหน้าที่, รายการ, สาขา, DF) | `POST /export/df` |
 | (ทุกหน้า) | เลือก IP สาขา + ปุ่ม Check | `GET /ip-list`, `POST /refresh-ip-list`, `POST /connect` |
 
 clone ใช้ชื่อ endpoint และรูปแบบ response เดิมทั้งหมด (Decimal128 ยังออกมาเป็น `{"$numberDecimal": "..."}`) แต่อยู่ใต้ `/api` และต้องมี token
@@ -28,12 +29,13 @@ backend/   NestJS (ESM)
   src/clinic      POST /api/connect + connection pool ต่อ IP สาขา
   src/deposits    search, update, search-bills, create-deposit, search-deposits, delete-deposit
   src/df          POST /api/df/search, POST /api/df/update (แก้ไข DF)
-  src/audit       audit_logs ของทุกการแก้ไข
+  src/export      POST /api/export/df (Export DF → ไฟล์ .xlsx สร้างด้วย write-excel-file)
+  src/audit       audit_logs ของทุกการแก้ไข และของการส่งออก (`export.df`)
   src/scripts     seed-demo-clinic.ts (ข้อมูลทดลอง), import-branches.ts (โหลดรายการ IP จากไฟล์ CSV/JSON)
 frontend/  React + Vite + Tailwind 3 + lucide-react
   src/components  IconInput (ช่องกรอกมีไอคอน), PageHeader (หัวข้อหน้า), InfoRow (บรรทัดในการ์ด), ServerStatus, IpPicker
-  src/pages       DepositReturn, DepositLost, DepositRemove, DfEdit (ไอคอนเมนูข้างกับไอคอนหัวข้อหน้าใช้ตัวเดียวกัน)
-  src/changelog.ts  ข้อความในป้าย "Update vX" และหน้าต่างประกาศ (ปัจจุบัน v1.2) · ออกเวอร์ชันใหม่: เพิ่มรายการไว้บนสุด แล้วแก้ version ใน package.json ของ backend และ frontend (`npm version X.Y.0 --no-git-tag-version`)
+  src/pages       DepositReturn, DepositLost, DepositRemove, DfEdit, ExportData (ไอคอนเมนูข้างกับไอคอนหัวข้อหน้าใช้ตัวเดียวกัน)
+  src/changelog.ts  ข้อความในป้าย "Update vX" และหน้าต่างประกาศ (ปัจจุบัน v1.3) · ออกเวอร์ชันใหม่: เพิ่มรายการไว้บนสุด แล้วแก้ version ใน package.json ของ backend และ frontend (`npm version X.Y.0 --no-git-tag-version`)
 export/    export-servers.mjs ดึง name,ip จาก AtizDevTool → servers.csv (เฉพาะที่ Enable), servers-all.csv (ทั้งหมด) · ไฟล์ CSV อยู่ใน .gitignore (เป็นรายชื่อโครงสร้างภายใน) สร้างใหม่ในเครื่องด้วยสคริปต์นี้
 ```
 
@@ -159,6 +161,17 @@ node dist/main.js                   # เสิร์ฟทั้งหน้า
   - save → `$set { cost_df: DF, price_total: DF, payment_id: null }` กับแถวที่เลือกแถวเดียว (ไม่ใช่ทุกแถวของบิล เพราะบิลหนึ่งมีหลายแถว DF ได้ เช่น คนละหมอ/คนละหัตถการ) · ถ้าค่าเท่าเดิมและ `payment_id` เป็น null อยู่แล้วจะไม่เขียนอะไร
   - สเปกเดิมเขียนว่า `price_df` แต่ไม่มีฟิลด์นี้ในฐานข้อมูลที่ตรวจ (0 เอกสารใน 4 ฐานข้อมูล) ฟิลด์จริงคือ **`price_total`**
   - **`payment_id` ไม่ใช่การจ่าย DF ให้แพทย์**: ทุกแถว `active` ในฐานข้อมูลที่ตรวจมีค่านี้ และชี้ไปที่ `payment_summary._id` (ใบชำระเงินของบิล) ไม่พบใน `doctorfees` การล้างเป็น `null` ทำตามสเปก (ผมไม่เห็นกฎของ DreaseV2 ว่ามันมีผลอะไรต่อ) ค่าเดิมเก็บไว้ใน `audit_logs.before.payment_id` เสมอเพื่อกู้คืนได้
+
+### Export DF (`POST /api/export/df`, อ่านอย่างเดียว)
+
+body `{ ip, from, to }` (`from`/`to` = `yyyy-mm-dd`) ตอบเป็นไฟล์ `.xlsx` (`DF_<ip>_<from>_<to>.xlsx`) พร้อม header `X-Export-Rows` / `X-Export-Total` / `X-Export-Unreadable`
+
+- query คือ pipeline ของสคริปต์ mongo shell ที่ทีม CS ใช้: `doctorbills` (`status: "active"`, `created_at` อยู่ในช่วง) → `$lookup bills` ด้วย `bill_id` → `branch_name` → เรียงตาม `created_at` (`$sort` ย้ายขึ้นมาก่อน `$lookup` เพื่อไม่ให้ถือบิลทั้งใบในหน่วยความจำ) · ทดสอบกับคลินิกจริง 2 แห่ง ได้แถวตรงกับสคริปต์เดิมทุกแถว
+- **วันนับตามเวลาไทย (UTC+7)** ทั้งการกรองช่วงและวันที่ในไฟล์ · `created_at` เป็นเวลา UTC จริง (ตรวจจากการกระจายของชั่วโมงในข้อมูล) สคริปต์เดิมจัดรูปแบบวันที่ด้วย UTC จึงเลื่อนแถวที่ออกหลังเที่ยงคืนเวลาไทยไปเป็นวันก่อน (พบ 3 แถวในคลินิกหนึ่ง)
+- **DF ที่ติดลบแสดงเป็นลบ** (สคริปต์เดิมตัดเครื่องหมายลบทิ้งด้วย regex จึงกลายเป็นบวก; พบแถวติดลบ 64 แถวในคลินิกหนึ่ง) · **`price_total` ที่เป็น `NaN` ในฐานข้อมูล** (พบ 1 แถว) จะเว้นช่องว่างในไฟล์ ไม่นับในยอดรวม และหน้าเว็บเตือนจำนวนแถวนั้น แทนที่จะแสดงเป็น 0 เงียบ ๆ
+- คอลัมน์ DF เป็นตัวเลขจริง (`#,##0.00`) ใช้ SUM ได้ · วันที่เป็นข้อความ `dd/mm/yyyy` (ปี ค.ศ.) เหมือนที่สคริปต์เดิมพิมพ์ · ข้อความจากฐานข้อมูลถูกเขียนเป็นข้อความเสมอ (ค่าอย่าง `=1+1` ไม่ถูกตีเป็นสูตร) · แถวหัวตารางถูกตรึง (ไลบรารีไม่รองรับ autofilter กด Ctrl+Shift+L ใน Excel เอง)
+- **ขีดจำกัดที่ป้องกันเครื่องคลินิกและเซิร์ฟเวอร์เล็ก**: query ใช้เวลาไม่เกิน 45 วินาที (`maxTimeMS`) · ไม่เกิน 50,000 แถวต่อไฟล์ (เกินแล้วตอบ 413 ให้แยกช่วง) · สร้างไฟล์พร้อมกันได้ 2 งาน (เกินตอบ 429) · 6 ครั้ง/นาที/IP · ช่วงที่ไม่มีข้อมูลตอบ 404 รหัส `NO_DATA` (ไม่ส่งไฟล์เปล่า) · ฐานข้อมูลของคลินิกส่วนใหญ่ไม่มี index บน `created_at` การค้นจึงสแกนทั้งคอลเลกชัน
+- ทุกครั้งที่ส่งออกสำเร็จบันทึก `audit_logs` (`action: "export.df"`, `after` = ช่วงวันที่, จำนวนแถว, ยอดรวม, ชื่อไฟล์)
 
 ## ต่างจากของเดิม
 

@@ -1,11 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
-export type AuditAction = 'deposit.update' | 'deposit.create' | 'deposit.delete' | 'df.update';
+export type AuditAction =
+  | 'deposit.update'
+  | 'deposit.create'
+  | 'deposit.delete'
+  | 'df.update'
+  | 'export.df';
 
 /**
- * One row per change the tool makes on a clinic database.
- * The original CSMS kept no record of who changed which deposit.
+ * One row per change the tool makes on a clinic database, plus one per data export (`export.*`, which
+ * changes nothing: `after` holds what was exported). The original CSMS kept no record of who changed which deposit.
  */
 @Schema({ collection: 'audit_logs', timestamps: { createdAt: true, updatedAt: false } })
 export class AuditLog {

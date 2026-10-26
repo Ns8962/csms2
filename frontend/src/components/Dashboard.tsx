@@ -10,6 +10,7 @@ import {
   Trash2,
   Undo2,
   FilePlus2,
+  FileSpreadsheet,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -18,8 +19,9 @@ import { DepositLost } from '../pages/DepositLost.tsx'
 import { DepositRemove } from '../pages/DepositRemove.tsx'
 import { DepositReturn } from '../pages/DepositReturn.tsx'
 import { DfEdit } from '../pages/DfEdit.tsx'
+import { ExportData } from '../pages/ExportData.tsx'
 
-type MenuKey = 'deposit_return' | 'deposit_lost' | 'deposit_remove' | 'df_edit'
+type MenuKey = 'deposit_return' | 'deposit_lost' | 'deposit_remove' | 'df_edit' | 'export_data'
 
 // Each page uses the same icon in its sidebar button and in its page title (see PageHeader).
 const MENU: { key: MenuKey; label: string; icon: LucideIcon }[] = [
@@ -27,6 +29,7 @@ const MENU: { key: MenuKey; label: string; icon: LucideIcon }[] = [
   { key: 'deposit_lost', label: 'รายการมัดจำไม่แสดง', icon: FilePlus2 },
   { key: 'deposit_remove', label: 'ลบรายการมัดจำ', icon: Trash2 },
   { key: 'df_edit', label: 'แก้ไข DF', icon: Stethoscope },
+  { key: 'export_data', label: 'Export data', icon: FileSpreadsheet },
 ]
 
 // CHANGELOG is newest first: the badge and the top of the popup show the latest release.
@@ -158,6 +161,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {menu === 'deposit_lost' && <DepositLost />}
         {menu === 'deposit_remove' && <DepositRemove />}
         {menu === 'df_edit' && <DfEdit />}
+        {menu === 'export_data' && <ExportData />}
       </main>
     </div>
   )

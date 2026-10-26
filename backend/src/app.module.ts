@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './common/auth/jwt-auth.guard.js';
 import { type EnvironmentVariables, validateEnv } from './config/env.validation.js';
 import { DepositsModule } from './deposits/deposits.module.js';
 import { DfModule } from './df/df.module.js';
+import { ExportModule } from './export/export.module.js';
 import { HealthController } from './health.controller.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module.js';
     ClinicModule,
     DepositsModule,
     DfModule,
+    ExportModule,
   ],
   controllers: [HealthController],
   providers: [
