@@ -12,6 +12,13 @@ export interface Release {
  */
 export const CHANGELOG: Release[] = [
   {
+    version: 'v1.6',
+    date: '2026-10-28',
+    items: [
+      'Export คอร์สคงเหลือ: เอาคอลัมน์ "เบอร์โทรผู้ป่วย" ที่เพิ่มใน v1.5 ออก ไฟล์กลับเป็น 10 คอลัมน์เหมือน v1.4',
+    ],
+  },
+  {
     version: 'v1.5',
     date: '2026-10-28',
     items: [

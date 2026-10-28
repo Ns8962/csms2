@@ -4,7 +4,7 @@ import {
   NotFoundException,
   PayloadTooLargeException,
 } from '@nestjs/common';
-import { type Db, type Document, MongoServerError } from 'mongodb';
+import type { Document } from 'mongodb';
 import { AuditService } from '../audit/audit.service.js';
 import { ClinicConnectionService } from '../clinic/clinic-connection.service.js';
 import {
@@ -24,8 +24,6 @@ import {
   isMaxTimeExpired,
   MAX_COURSE_ROWS,
   MAX_EXPORT_ROWS,
-  PHONE_QUERY_TIMEOUT_MS,
-  phoneOf,
   QUERY_TIMEOUT_MS,
   safeName,
   text,
@@ -57,8 +55,6 @@ interface CourseRow {
   treatment: string;
   expire: string;
   branch: string;
-  /** Latest usable phone number of the patient in the appointment log; '' when there is none. */
-  phone: string;
 }
 
 export interface Branch {
@@ -88,12 +84,6 @@ export interface CoursesExportFile extends ExportFileBase {
   noTreatment: number;
   /** Active course purchases skipped because their bill is missing, so no branch can be shown (all-branches export only). */
   noBill: number;
-  /** Distinct patients (HN) behind the rows. */
-  patients: number;
-  /** Of those, how many have no usable phone number in the appointment log (blank cells). */
-  noPhone: number;
-  /** True when the phone lookup was given up on (too slow, or refused by the clinic server): the phone column is blank. */
-  phoneUnavailable: boolean;
 }
 
 const DF_HEADERS = ['วันที่', 'แพทย์/เจ้าหน้าที่', 'รายการ', 'สาขา', 'DF'];
@@ -110,12 +100,8 @@ const COURSE_HEADERS = [
   'ชื่อรายการ',
   'วันหมดอายุ',
   'สาขา',
-  // Added after the CS script's own columns, at the end, so the existing columns keep their positions.
-  'เบอร์โทรผู้ป่วย',
 ];
-const COURSE_WIDTHS = [14, 28, 34, 14, 20, 20, 14, 36, 14, 28, 18];
-/** HNs per lookup in the appointment log (one scan of that collection per chunk). */
-const PHONE_CHUNK = 10_000;
+const COURSE_WIDTHS = [14, 28, 34, 14, 20, 20, 14, 36, 14, 28];
 
 type BranchFilter = ExportCoursesDto['branch'];
 
@@ -309,7 +295,7 @@ export class ExportService {
         widths: COURSE_WIDTHS,
         numberFormats: { 3: '#,##0.00', 4: '0.##', 5: '0.##' },
         rows: rows.map(
-          (r): CellValue[] => [r.hn, r.patient, r.course, r.price, r.total, r.remaining, r.code, r.treatment, r.expire, r.branch, r.phone],
+          (r): CellValue[] => [r.hn, r.patient, r.course, r.price, r.total, r.remaining, r.code, r.treatment, r.expire, r.branch],
         ),
       });
       const stamp = thaiDate(new Date()).split('/').reverse().join('-');
@@ -335,25 +321,11 @@ export class ExportService {
           unreadable,
           noTreatment,
           noBill: result.noBill,
-          patients: result.patients,
-          noPhone: result.noPhone,
-          phoneUnavailable: result.phoneUnavailable,
           file: filename,
         },
         requestIp: actor.requestIp,
       });
-      return {
-        buffer,
-        filename,
-        rows: rows.length,
-        courses: result.courses,
-        unreadable,
-        noTreatment,
-        noBill: result.noBill,
-        patients: result.patients,
-        noPhone: result.noPhone,
-        phoneUnavailable: result.phoneUnavailable,
-      };
+      return { buffer, filename, rows: rows.length, courses: result.courses, unreadable, noTreatment, noBill: result.noBill };
     });
   }
 
@@ -367,14 +339,7 @@ export class ExportService {
   private readCourseRows(
     dto: ExportCoursesDto,
     due: { from?: Date; toExclusive?: Date },
-  ): Promise<{
-    rows: CourseRow[];
-    courses: number;
-    noBill: number;
-    patients: number;
-    noPhone: number;
-    phoneUnavailable: boolean;
-  }> {
+  ): Promise<{ rows: CourseRow[]; courses: number; noBill: number }> {
     const dueMatch =
       due.from || due.toExclusive
         ? { due_date: { ...(due.from ? { $gte: due.from } : {}), ...(due.toExclusive ? { $lt: due.toExclusive } : {}) } }
@@ -446,7 +411,6 @@ export class ExportService {
             treatment: text(doc.get_listheals?.name_th),
             expire: doc.due_date instanceof Date ? utcDayDashed(doc.due_date) : '',
             branch: text(doc.get_bill?.branch_name),
-            phone: '',
           });
         }
       } catch (err) {
@@ -488,53 +452,7 @@ export class ExportService {
           if (!isMaxTimeExpired(err)) throw err;
         }
       }
-
-      // Phone numbers: one lookup per 10,000 patients, never one per row (the appointment log has no index on hn).
-      const hns = [...new Set(rows.map((r) => r.hn).filter((hn) => hn !== ''))];
-      const { phones, unavailable } = await this.readPhones(db, hns);
-      for (const row of rows) row.phone = phones.get(row.hn) ?? '';
-      return {
-        rows,
-        courses: courseIds.size,
-        noBill,
-        patients: hns.length,
-        noPhone: hns.filter((hn) => !phones.has(hn)).length,
-        phoneUnavailable: unavailable,
-      };
+      return { rows, courses: courseIds.size, noBill };
     });
-  }
-
-  /**
-   * Phone numbers by HN. DreaseV2 keeps no patient register in MongoDB; the one place a patient's number is stored
-   * is the appointment log, so the number is the latest usable `tel` of that HN in `appointment_logs`.
-   * This is a side note of the report: when the clinic server refuses or cannot answer in time (time limit, sort
-   * memory, no permission) the report still goes out with a blank phone column and the caller says so. A dropped
-   * connection is not caught here: `clinic.run` turns it into the usual "cannot connect" answer.
-   */
-  private async readPhones(db: Db, hns: string[]): Promise<{ phones: Map<string, string>; unavailable: boolean }> {
-    const phones = new Map<string, string>();
-    for (let i = 0; i < hns.length; i += PHONE_CHUNK) {
-      const cursor = db.collection(COLLECTIONS.appointmentLogs).aggregate(
-        [
-          { $match: { hn: { $in: hns.slice(i, i + PHONE_CHUNK) }, tel: { $type: 'string' } } },
-          { $project: { hn: 1, tel: 1, createdAt: 1 } },
-          { $sort: { createdAt: -1, _id: -1 } },
-        ],
-        { maxTimeMS: PHONE_QUERY_TIMEOUT_MS },
-      );
-      try {
-        for await (const doc of cursor) {
-          if (typeof doc.hn !== 'string' || phones.has(doc.hn)) continue;
-          const phone = phoneOf(doc.tel);
-          if (phone) phones.set(doc.hn, phone);
-        }
-      } catch (err) {
-        if (err instanceof MongoServerError) return { phones: new Map(), unavailable: true };
-        throw err;
-      } finally {
-        await cursor.close().catch(() => undefined);
-      }
-    }
-    return { phones, unavailable: false };
   }
 }

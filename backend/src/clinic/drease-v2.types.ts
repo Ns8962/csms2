@@ -27,8 +27,6 @@ export const COLLECTIONS = {
   doctorBills: 'doctorbills',
   courseBills: 'course_bills',
   listHeals: 'listheals',
-  /** Appointments (`hn`, `tel`, `createdAt`, ...). The only place in MongoDB where a patient's phone number is kept. */
-  appointmentLogs: 'appointment_logs',
 } as const;
 
 export interface BillListItem {

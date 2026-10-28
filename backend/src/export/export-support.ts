@@ -13,8 +13,6 @@ export const MAX_EXPORT_ROWS = 50_000;
 export const MAX_COURSE_ROWS = 30_000;
 /** Clinic databases are live systems: never let one export run for long on them. */
 export const QUERY_TIMEOUT_MS = 45_000;
-/** The phone lookup is a side note of the course report: shorter limit, and the report goes out without phones if it is exceeded. */
-export const PHONE_QUERY_TIMEOUT_MS = 15_000;
 /** MongoDB error code MaxTimeMSExpired. */
 const MAX_TIME_EXPIRED = 50;
 /** Exports building at the same moment (each holds its rows and the zipped file in memory). */
@@ -37,21 +35,6 @@ export function amountOf(value: unknown): number | null {
   if (!d) return null;
   const n = Number(d.toString());
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
-}
-
-/**
- * A phone number as it should appear in the file: the first number-like part of the text, with spaces, dashes, dots and
- * brackets removed and a leading "+" kept ("081-234-5678" -> "0812345678", " 0812345678 (แม่)" -> "0812345678").
- * Fewer than 9 or more than 15 digits (placeholders such as "-" or "0", free text) give '': a blank cell, never a
- * made-up number. It is always written to the file as text, so the leading 0 survives.
- */
-export function phoneOf(value: unknown): string {
-  const raw = typeof value === 'string' ? value : typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
-  const found = /\+?\d[\d\s().-]{6,}\d/.exec(raw);
-  if (!found) return '';
-  const cleaned = found[0].replace(/[\s().-]/g, '');
-  const digits = cleaned.replace(/\D/g, '').length;
-  return digits >= 9 && digits <= 15 ? cleaned : '';
 }
 
 /** A count stored as a number (or numeric text); anything else is null (blank cell), never a made-up 0. */
