@@ -62,6 +62,9 @@ export class ExportController {
       'X-Export-Unreadable': String(file.unreadable),
       'X-Export-No-Treatment': String(file.noTreatment),
       'X-Export-No-Bill': String(file.noBill),
+      'X-Export-Patients': String(file.patients),
+      'X-Export-No-Phone': String(file.noPhone),
+      'X-Export-Phone-Unavailable': file.phoneUnavailable ? '1' : '0',
     });
     return new StreamableFile(file.buffer);
   }

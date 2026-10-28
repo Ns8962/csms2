@@ -376,6 +376,13 @@ function ExportCourses({ onBack }: { onBack: () => void }) {
             if (res.extra['no-treatment']) {
               notes.push(`${res.extra['no-treatment']} แถวหารายการรักษา (listheals) ไม่พบ (รหัสและชื่อรายการเว้นว่างไว้)`)
             }
+            if (res.extra['phone-unavailable']) {
+              notes.push('ดึงเบอร์โทรไม่สำเร็จ (ประวัตินัดหมายของสาขานี้ใหญ่เกินไป หรือเครื่องสาขาไม่ตอบทันเวลา) ช่องเบอร์โทรจึงเว้นว่างทั้งหมด')
+            } else if (res.extra['no-phone']) {
+              notes.push(
+                `ผู้ป่วย ${res.extra['no-phone'].toLocaleString('en-US')} จาก ${(res.extra.patients ?? 0).toLocaleString('en-US')} คน ไม่มีเบอร์โทรในประวัตินัดหมาย (เว้นว่างไว้ในไฟล์)`,
+              )
+            }
             return {
               summary: `${res.rows.toLocaleString('en-US')} แถว จาก ${(res.extra.courses ?? 0).toLocaleString('en-US')} คอร์ส`,
               notes,
@@ -474,7 +481,10 @@ function ExportCourses({ onBack }: { onBack: () => void }) {
             <p className="mt-2 text-xs text-gray-500">เว้นว่าง = ไม่จำกัด (ทุกคอร์สที่ยังใช้งานอยู่) รวมทั้งวันแรกและวันสุดท้าย</p>
           </details>
 
-          <p className="mb-4 text-xs text-gray-500">รองรับสูงสุด 30,000 แถวต่อไฟล์ · ไฟล์มีชื่อและ HN ของผู้ป่วย โปรดเก็บรักษาข้อมูลอย่างระมัดระวัง</p>
+          <p className="mb-1 text-xs text-gray-500">รองรับสูงสุด 30,000 แถวต่อไฟล์ · ไฟล์มีชื่อ HN และเบอร์โทรของผู้ป่วย โปรดเก็บรักษาข้อมูลอย่างระมัดระวัง</p>
+          <p className="mb-4 text-xs text-gray-500">
+            เบอร์โทรดึงจากประวัตินัดหมายล่าสุดของผู้ป่วย (ฐานข้อมูลสาขาไม่มีทะเบียนผู้ป่วย) จึงอาจไม่ครบทุกคน
+          </p>
           <DownloadButton onClick={run} busy={busy} />
         </>
       ) : (
@@ -498,7 +508,7 @@ const EXPORTS: { key: ExportKey; title: string; description: ReactNode; icon: Lu
   {
     key: 'courses',
     title: 'Export คอร์สคงเหลือ',
-    description: 'คอร์สที่ลูกค้ายังใช้งานอยู่ แยกตามสาขา พร้อมจำนวนครั้งที่เหลือและวันหมดอายุ',
+    description: 'คอร์สที่ลูกค้ายังใช้งานอยู่ แยกตามสาขา พร้อมจำนวนครั้งที่เหลือ วันหมดอายุ และเบอร์โทรผู้ป่วย',
     icon: Ticket,
   },
 ]

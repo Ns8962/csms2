@@ -10,6 +10,8 @@
 # Server name/IP lists exported from the admin tool and the fleet survey results.
 # Regenerate locally with export/export-servers.mjs.
 export/*.csv
+# Generated AWS scripts: they hold customer AWS account / security-group ids.
+export/*.sh
 
 # ---- dependencies and build output ----
 node_modules/
